@@ -181,7 +181,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:18px 0 40px;colo
 </div>
 
 <main class="wrap">
-  <div class="carregando" id="carregando">Buscando os resultados…</div>
+  <div class="carregando" id="carregando">Buscando os resultados… <span id="tick" class="num"></span></div>
   <section id="sec-jogadores"></section>
   <section id="sec-lendas"></section>
   <section id="sec-dominios"></section>
@@ -625,7 +625,12 @@ function abrirLogin(){
   l_email.focus();
 }
 
+let t0=Date.now(), tickId=setInterval(()=>{
+  const el=document.getElementById('tick');
+  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v2)';
+},1000);
 function falhar(txt,detalhe){
+  clearInterval(tickId);
   carregando.style.display='';
   carregando.innerHTML='<div class="aviso erro" style="text-align:left">'+esc(txt)+
     (detalhe?'<br><span class="num" style="font-size:12px">'+esc(detalhe)+'</span>':'')+'</div>';
@@ -639,6 +644,7 @@ const RENDER={jogadores:secJogadores,lendas:secLendas,dominios:secDominios,coroa
 
 function pinta(){
   if(!D.all){ falhar('Sem dados para exibir.'); return; }
+  clearInterval(tickId);
   carregando.style.display='none';
   topo();
   if(aba==='novo'&&!ehAdm) aba='jogadores';
