@@ -198,6 +198,12 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:18px 0 40px;colo
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+window.addEventListener('error',ev=>{
+  const el=document.getElementById('carregando');
+  if(el && el.style.display!=='none')
+    el.innerHTML='<div class="aviso erro" style="text-align:left">Erro no código da página.'+
+      '<br><span class="num" style="font-size:12px">'+String(ev.message)+'</span></div>';
+});
 const SUPABASE_URL = 'https://vcqnsmvzxbdatuqshvjx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_r1_wX7hZULctPS5OMkkjig_hT5qJQLp';
 if(!window.supabase){
@@ -627,7 +633,7 @@ function abrirLogin(){
 
 let t0=Date.now(), tickId=setInterval(()=>{
   const el=document.getElementById('tick');
-  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v2)';
+  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v3)';
 },1000);
 function falhar(txt,detalhe){
   clearInterval(tickId);
@@ -681,7 +687,8 @@ document.addEventListener('input',e=>{
 document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('prow')){e.preventDefault();e.target.click();}
 });
-busca.addEventListener('input',e=>{busca=e.target.value.trim().toLowerCase();aberto=null;pinta();});
+document.getElementById('busca').addEventListener('input',e=>{
+  busca=e.target.value.trim().toLowerCase();aberto=null;pinta();});
 
 (async()=>{
   try{
