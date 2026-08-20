@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Riftbound · Ranking do interior de SP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0C1626; --panel:#16233A; --panel2:#1B2C46; --line:#2A3E5C;
+  --gold:#E7C24A; --teal:#2FC2B4; --txt:#E8EEF6; --sub:#A9B7CC; --mute:#8FA0B8;
+  --erro:#E24A3B; --ok:#34A85A;
+  --Fury:#E24A3B; --Calm:#34A85A; --Body:#E8923A; --Mind:#3F82D6; --Order:#E6C23C; --Chaos:#9A5FD0;
+  --disp:'Archivo',system-ui,sans-serif; --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ink);color:var(--txt);font-family:var(--body);font-size:15px;
+  line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+h1,h2,h3{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;margin:0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:26px 0 4px}
+.brand h1{font-size:clamp(30px,7vw,46px);color:var(--gold);line-height:1}
+.brand .sub{color:var(--sub);font-size:13px}
+.brand .auth{margin-left:auto;font-size:12.5px}
+.season{color:var(--mute);font-size:12.5px;font-family:var(--mono);padding-bottom:18px}
+.fingerprint{display:flex;height:100%;width:100%;border-radius:2px;overflow:hidden}
+.fingerprint i{display:block;height:100%}
+.hero{padding:26px 0 8px}
+.hero .bar{height:56px;border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.hero .legendrow{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px}
+.chip{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--sub)}
+.chip b{width:11px;height:11px;border-radius:2px;display:block}
+.chip .n{font-family:var(--mono);color:var(--txt)}
+.herolead{font-size:14px;color:var(--sub);max-width:62ch;margin:0 0 14px}
+.herolead b{color:var(--txt);font-weight:600}
+.stats{display:flex;flex-wrap:wrap;gap:6px 20px;margin:18px 0 2px;padding-top:14px;border-top:1px solid var(--line)}
+.stat{font-size:12.5px;color:var(--mute)}
+.stat .v{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--txt);margin-right:5px}
+.controls{position:sticky;top:0;z-index:20;background:rgba(12,22,38,.94);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);padding:10px 0;margin-top:20px}
+.controls .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px}
+.seg button{background:none;border:0;color:var(--sub);font-family:var(--body);font-size:13px;
+  padding:6px 13px;border-radius:4px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--teal);color:#06121F;font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,
+.prow:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+input,select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  color:var(--txt);font-family:var(--body);font-size:14px;padding:8px 11px}
+input[type=search]{flex:1;min-width:180px}
+textarea{width:100%;font-family:var(--mono);font-size:12.5px;line-height:1.6;resize:vertical}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;margin-top:9px;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);
+  mask-image:linear-gradient(90deg,#000 88%,transparent)}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--mute);
+  font-family:var(--body);font-size:13px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected=true]{color:var(--gold);border-bottom-color:var(--gold)}
+nav.tabs button.adm[aria-selected=false]{color:var(--teal)}
+section{padding:26px 0 8px;display:none}
+section.on{display:block}
+.shead{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.shead h2{font-size:21px}
+.shead .hint{font-size:12.5px;color:var(--mute)}
+.note{font-size:12.5px;color:var(--mute);margin:0 0 16px}
+.colhead{display:grid;grid-template-columns:34px 1fr 92px 62px;gap:10px;padding:0 11px 5px;
+  border-bottom:1px solid var(--line);font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--mute);font-weight:600}
+.colhead span:nth-child(3),.colhead span:nth-child(4){text-align:right}
+.prow{display:grid;grid-template-columns:34px 1fr 92px 62px;gap:10px;align-items:center;
+  padding:9px 11px;border-bottom:1px solid var(--line);cursor:pointer}
+.prow:hover{background:var(--panel2)}
+.prow .pos{font-family:var(--mono);font-size:12px;color:var(--mute);text-align:right}
+.prow .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .fp{height:5px;margin-top:5px;max-width:190px}
+.prow .adj{font-family:var(--mono);font-size:14px;color:var(--gold);text-align:right}
+.prow .adj small{display:block;font-size:10.5px;color:var(--mute)}
+.prow .tn{font-family:var(--mono);font-size:12px;color:var(--sub);text-align:right}
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:13px;margin:0 0 10px}
+.kv{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:11px}
+.kv div{font-size:12px;color:var(--mute)}
+.kv b{display:block;font-family:var(--mono);font-size:15px;color:var(--txt);font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);
+  font-weight:600;padding:5px 7px;border-bottom:1px solid var(--line)}
+td{padding:6px 7px;border-bottom:1px solid rgba(42,62,92,.5)}
+tr:last-child td{border-bottom:0}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dots{display:inline-flex;gap:3px;vertical-align:middle;margin-right:6px}
+.dots i{width:8px;height:8px;border-radius:2px;display:block}
+.crown{color:var(--gold)}
+.pill{font-family:var(--mono);font-size:11px;color:var(--sub);background:var(--panel2);
+  border:1px solid var(--line);border-radius:3px;padding:1px 6px}
+.empty{color:var(--mute);font-size:13px;padding:18px 2px}
+.barline{display:flex;align-items:center;gap:9px;margin:6px 0}
+.barline .lbl{width:110px;font-size:12.5px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barline .track{flex:1;display:block;height:9px;background:var(--panel2);border-radius:2px;overflow:hidden}
+.barline .fill{display:block;height:100%}
+.barline .val{width:76px;white-space:nowrap;text-align:right;font-family:var(--mono);font-size:12px;color:var(--sub);flex:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+.card h3{font-size:14px;margin-bottom:9px;color:var(--txt)}
+.btn{background:var(--teal);color:#06121F;border:0;border-radius:6px;font-family:var(--body);
+  font-size:14px;font-weight:600;padding:9px 16px;cursor:pointer}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--sub);font-weight:500}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.formgrid label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);
+  font-weight:600;display:block;margin-bottom:4px}
+.formgrid input,.formgrid select{width:100%}
+.aviso{border-radius:6px;padding:10px 12px;font-size:13px;margin:12px 0;border:1px solid}
+.aviso.erro{border-color:var(--erro);background:rgba(226,74,59,.12);color:#FFC9C2}
+.aviso.ok{border-color:var(--ok);background:rgba(52,168,90,.12);color:#BFE9CC}
+.aviso.info{border-color:var(--line);background:var(--panel2);color:var(--sub)}
+.aviso ul{margin:6px 0 0;padding-left:18px}
+.rev td{padding:4px 5px}
+.rev input,.rev select{padding:5px 7px;font-size:13px;width:100%}
+.rev input.n{font-family:var(--mono);text-align:right}
+.rev .w-r{width:52px}.rev .w-p{width:56px}
+.novo{color:var(--gold);font-size:11px;font-family:var(--mono)}
+.overlay{position:fixed;inset:0;background:rgba(6,12,22,.72);display:flex;align-items:center;
+  justify-content:center;z-index:50;padding:18px}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px;
+  width:100%;max-width:360px}
+.modal h3{font-size:17px;margin-bottom:4px}
+.modal p{font-size:12.5px;color:var(--mute);margin:0 0 14px}
+.modal input{width:100%;margin-bottom:9px}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:18px 0 40px;color:var(--mute);font-size:12px}
+.carregando{padding:60px 0;text-align:center;color:var(--mute);font-size:14px}
+@media (max-width:720px){
+  .grid2{grid-template-columns:1fr}
+  .prow{grid-template-columns:28px 1fr 78px;gap:8px}
+  .prow .tn,.colhead span:nth-child(4){display:none}
+  .colhead{grid-template-columns:28px 1fr 78px;gap:8px}
+  .barline .lbl{width:88px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <h1>RIFTBOUND</h1>
+      <span class="sub">Ranking do interior de SP</span>
+      <span class="auth" id="auth"></span>
+    </div>
+    <div class="season num" id="season">carregando…</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <p class="herolead">Toda lenda joga com <b>dois domínios</b>. Esta é a mistura de cores
+      da temporada inteira — e cada jogador abaixo tem a dele.</p>
+    <div class="bar"><div class="fingerprint" id="heroBar"></div></div>
+    <div class="legendrow" id="heroLegend"></div>
+  </div>
+  <div class="stats" id="stats"></div>
+</div>
+
+<div class="controls">
+  <div class="wrap">
+    <div class="row">
+      <div class="seg" role="group" aria-label="Formato">
+        <button data-fmt="all" aria-pressed="true">Todos</button>
+        <button data-fmt="nexus" aria-pressed="false">Nexus Night</button>
+        <button data-fmt="skirmish" aria-pressed="false">Skirmish</button>
+      </div>
+      <input type="search" id="busca" placeholder="Buscar jogador ou lenda…" aria-label="Buscar">
+    </div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="carregando" id="carregando">Buscando os resultados…</div>
+  <section id="sec-jogadores"></section>
+  <section id="sec-lendas"></section>
+  <section id="sec-dominios"></section>
+  <section id="sec-coroas"></section>
+  <section id="sec-torneios"></section>
+  <section id="sec-meta"></section>
+  <section id="sec-novo"></section>
+</main>
+
+<footer class="wrap">
+  Média ajustada = (pontos + 6 × média da liga) ÷ (jogos + 6) — quem jogou pouco é puxado
+  pro meio da liga. Pontos = 3 × vitórias + empates, calculado pelo banco.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL = 'https://vcqnsmvzxbdatuqshvjx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_r1_wX7hZULctPS5OMkkjig_hT5qJQLp';
+if(!window.supabase){
+  document.getElementById('carregando').innerHTML =
+    '<div class="aviso erro" style="text-align:left">Não consegui carregar a biblioteca do Supabase. '+
+    'Verifique sua conexão e recarregue a página.</div>';
+  throw new Error('supabase-js nao carregou');
+}
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ORDEM=['Fury','Calm','Body','Mind','Order','Chaos'];
+const COR={Fury:'#E24A3B',Calm:'#34A85A',Body:'#E8923A',Mind:'#3F82D6',Order:'#E6C23C',Chaos:'#9A5FD0'};
+const MES={5:'mai',6:'jun',7:'jul',8:'ago',9:'set',10:'out',11:'nov',12:'dez'};
+const PRIOR=6, BASE=[4,2,1];
+
+let RAW=[], LENDAS=[], LOJAS=[], D={}, sessao=null, ehAdm=false;
+let fmt='all', aba='jogadores', busca='', aberto=null, revisao=null, msg=null;
+
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dots=(a,b)=>`<span class="dots"><i style="background:${COR[a]}"></i><i style="background:${COR[b]}"></i></span>`;
+const fp=(mix,cls='')=>`<div class="fingerprint ${cls}">${ORDEM.map((d,i)=>
+  mix[i]>0?`<i style="background:${COR[d]};width:${mix[i]}%"></i>`:'').join('')}</div>`;
+const bate=t=>!busca||String(t).toLowerCase().includes(busca);
+// a data vem como '2026-08-19T19:30:00+00:00'; fatiar evita fuso horario
+const dia=iso=>iso.slice(8,10)+'/'+iso.slice(5,7);
+const mesDe=iso=>+iso.slice(5,7);
+const chave=r=>r.data+'|'+r.loja;
+
+// ======================= CALCULO =======================
+function montar(rows){
+  if(!rows.length) return null;
+  const jogos=q=>q.reduce((s,z)=>s+z.vitorias+z.derrotas+z.empates,0);
+  const pontos=q=>q.reduce((s,z)=>s+z.pontos,0);
+  const MU=pontos(rows)/jogos(rows);
+  const ADJ=(P,G)=>(P+PRIOR*MU)/(G+PRIOR);
+  const grupo=(arr,fn)=>arr.reduce((m,x)=>((m[fn(x)]=m[fn(x)]||[]).push(x),m),{});
+
+  const porTor=grupo(rows,chave);
+  const chaves=Object.keys(porTor).sort();
+  const torneios=chaves.map(k=>{
+    const g=porTor[k].slice().sort((a,b)=>a.colocacao-b.colocacao), ch=g[0];
+    return {data:dia(g[0].data), iso:g[0].data, loja:g[0].loja, cidade:g[0].cidade,
+      evento:g[0].evento, n:g.length, campeao:ch.apelido, lenda:ch.lenda_curta,
+      d1:ch.dominio1, d2:ch.dominio2, vde:`${ch.vitorias}-${ch.derrotas}-${ch.empates}`,
+      pts:ch.pontos, gw:Math.round(g.reduce((s,z)=>s+(z.gw||0),0)/g.length*100),
+      emp:Math.floor(g.reduce((s,z)=>s+z.empates,0)/2),
+      tabela:g.map(z=>({rank:z.colocacao,user:z.apelido,lenda:z.lenda_curta,d1:z.dominio1,
+        d2:z.dominio2,pts:z.pontos,vde:`${z.vitorias}-${z.derrotas}-${z.empates}`}))};
+  });
+
+  const porUser=grupo(rows,z=>z.apelido);
+  const jogadores=Object.entries(porUser).map(([u,q0])=>{
+    const q=q0.slice().sort((a,b)=>a.data<b.data?-1:1);
+    const mix={}; q.forEach(z=>{mix[z.dominio1]=(mix[z.dominio1]||0)+1;mix[z.dominio2]=(mix[z.dominio2]||0)+1;});
+    const tm=Object.values(mix).reduce((a,b)=>a+b,0)||1;
+    let melhor=0,atual=0;
+    q.forEach(z=>{atual=z.colocacao<=3?atual+1:0;melhor=Math.max(melhor,atual);});
+    return {user:u, adj:+ADJ(pontos(q),jogos(q)).toFixed(2), pts:pontos(q), jogos:jogos(q),
+      torneios:q.length, melhorcol:Math.min(...q.map(z=>z.colocacao)),
+      gw:Math.round(q.reduce((s,z)=>s+(z.gw||0),0)/q.length*100),
+      top3:Math.round(q.filter(z=>z.colocacao<=3).length/q.length*100), seq:melhor,
+      variedade:new Set(q.map(z=>z.lenda_curta)).size,
+      mix:ORDEM.map(d=>Math.round((mix[d]||0)/tm*100)),
+      hist:q.map(z=>({data:dia(z.data),loja:z.loja,rank:z.colocacao,lenda:z.lenda_curta,
+        d1:z.dominio1,d2:z.dominio2,pts:z.pontos,
+        vde:`${z.vitorias}-${z.derrotas}-${z.empates}`}))};
+  }).sort((a,b)=>b.adj-a.adj||a.melhorcol-b.melhorcol||b.gw-a.gw);
+
+  const porLeg=grupo(rows,z=>z.lenda_curta);
+  const lendas=Object.entries(porLeg).map(([lg,g])=>{
+    const pil=grupo(g,z=>z.apelido);
+    const pilotos=Object.entries(pil).map(([u,t])=>({user:u,adj:+ADJ(pontos(t),jogos(t)).toFixed(2),
+      n:t.length,gw:Math.round(t.reduce((s,z)=>s+(z.gw||0),0)/t.length*100)}))
+      .sort((a,b)=>b.adj-a.adj);
+    const est=g.reduce((a,b)=>a.data<b.data?a:b);
+    return {curto:lg,d1:g[0].dominio1,d2:g[0].dominio2,n:g.length,
+      adj:+ADJ(pontos(g),jogos(g)).toFixed(2),
+      gw:Math.round(g.reduce((s,z)=>s+(z.gw||0),0)/g.length*100),
+      pilotos,estreia:dia(est.data),estreante:est.apelido};
+  }).sort((a,b)=>b.n-a.n);
+
+  const dn={},dp={},dg={};
+  rows.forEach(x=>{const ppj=x.pontos/Math.max(1,x.vitorias+x.derrotas+x.empates);
+    [x.dominio1,x.dominio2].forEach(k=>{dn[k]=(dn[k]||0)+1;(dp[k]=dp[k]||[]).push(ppj);(dg[k]=dg[k]||[]).push(x.gw||0);});});
+  const totD=Object.values(dn).reduce((a,b)=>a+b,0)||1;
+  const dominios=ORDEM.map(d=>({nome:d,n:dn[d]||0,share:+((dn[d]||0)/totD*100).toFixed(1),
+    pts:+((dp[d]||[0]).reduce((a,b)=>a+b,0)/(dp[d]||[1]).length).toFixed(2),
+    gw:Math.round((dg[d]||[0]).reduce((a,b)=>a+b,0)/(dg[d]||[1]).length*100)}));
+
+  const sc={};
+  Object.entries(porLeg).forEach(([lg,g])=>{
+    const pil=grupo(g,z=>z.apelido), N=Object.keys(pil).length;
+    Object.entries(pil).map(([u,t])=>[u,ADJ(pontos(t),jogos(t))])
+      .sort((a,b)=>b[1]-a[1]).slice(0,3)
+      .forEach(([u],i)=>{sc[u]=sc[u]||{pts:0,s1:[],s2:[],s3:[]};
+        sc[u].pts+=BASE[i]+(N-1-i); sc[u][['s1','s2','s3'][i]].push(lg);});
+  });
+  const coroas=Object.entries(sc).map(([u,v])=>({user:u,pts:v.pts,
+    s1:v.s1.sort(),s2:v.s2.sort(),s3:v.s3.sort()}))
+    .sort((a,b)=>b.pts-a.pts||b.s1.length-a.s1.length||a.user.localeCompare(b.user));
+
+  const pm={};
+  rows.forEach(x=>{const k=mesDe(x.data);(pm[k]=pm[k]||{})[x.lenda_curta]=((pm[k]||{})[x.lenda_curta]||0)+1;});
+  const metames=Object.keys(pm).map(Number).sort((a,b)=>a-b).map(k=>{
+    const tot=Object.values(pm[k]).reduce((a,b)=>a+b,0);
+    return {mes:MES[k]||k,total:tot,
+      lendas:Object.entries(pm[k]).sort((a,b)=>b[1]-a[1]).slice(0,6)
+        .map(([n,c])=>({nome:n,n:c,share:Math.round(c/tot*100)}))};
+  });
+
+  const porLoja=grupo(torneios,t=>t.loja);
+  const lojas=Object.entries(porLoja).map(([l,ts])=>({loja:l,torneios:ts.length,
+    media:+(ts.reduce((s,t)=>s+t.n,0)/ts.length).toFixed(1),
+    maior:Math.max(...ts.map(t=>t.n)),
+    gw:Math.round(ts.reduce((s,t)=>s+t.gw*t.n,0)/ts.reduce((s,t)=>s+t.n,0))}))
+    .sort((a,b)=>b.torneios-a.torneios);
+
+  return {meta:{torneios:chaves.length,participacoes:rows.length,
+      jogadores:Object.keys(porUser).length,campeoes:Object.keys(porLeg).length,
+      mu:+MU.toFixed(3),inicio:torneios[0].data,fim:torneios[torneios.length-1].data,
+      ano:torneios[torneios.length-1].iso.slice(0,4)},
+    torneios:torneios.reverse(),jogadores,lendas,dominios,coroas,metames,lojas};
+}
+
+function recalcular(){
+  D.all=montar(RAW);
+  D.nexus=montar(RAW.filter(r=>r.tipo==='Nexus'));
+  D.skirmish=montar(RAW.filter(r=>r.tipo==='Skirmish'));
+}
+
+// ======================= DADOS =======================
+async function carregar(){
+  const [p,l,lo]=await Promise.all([
+    sb.from('vw_participacoes').select('*'),
+    sb.from('lendas').select('*').order('nome_curto'),
+    sb.from('lojas').select('*').order('nome')]);
+  const falhou=[p,l,lo].find(r=>r.error);
+  if(falhou) throw falhou.error;
+  RAW=p.data||[]; LENDAS=l.data||[]; LOJAS=lo.data||[];
+  if(!RAW.length){
+    const e=new Error('A consulta funcionou mas voltou sem nenhuma linha. '+
+      'Isso costuma ser GRANT faltando (rode o patch01_grants.sql) ou politica de RLS barrando a leitura.');
+    e.vazio=true; throw e;
+  }
+  recalcular();
+}
+
+async function verSessao(){
+  const {data}=await sb.auth.getSession();
+  sessao=data.session;
+  ehAdm=false;
+  if(sessao){
+    const {data:a}=await sb.from('adms').select('user_id').eq('user_id',sessao.user.id).maybeSingle();
+    ehAdm=!!a;
+  }
+}
+
+// ======================= RENDER =======================
+const ABAS=()=>[['jogadores','Jogadores'],['lendas','Lendas'],['dominios','Domínios'],
+  ['coroas','Coroas'],['torneios','Torneios'],['meta','Meta por mês']]
+  .concat(ehAdm?[['novo','+ Novo torneio']]:[]);
+
+function topo(){
+  const d=D[fmt]; if(!d) return;
+  const m=d.meta;
+  season.textContent=`${m.torneios} torneios · ${m.inicio} a ${m.fim}/${m.ano} · média da liga ${m.mu} pts por jogo`;
+  const tot=d.dominios.reduce((s,x)=>s+x.n,0);
+  heroBar.innerHTML=d.dominios.map(x=>`<i style="background:${COR[x.nome]};width:${x.n/tot*100}%" title="${x.nome}"></i>`).join('');
+  heroLegend.innerHTML=d.dominios.map(x=>`<span class="chip"><b style="background:${COR[x.nome]}"></b>${x.nome} <span class="n">${x.n}</span></span>`).join('');
+  stats.innerHTML=[[m.participacoes,'participações'],[m.jogadores,'jogadores'],
+    [m.campeoes,'lendas vistas'],[d.lojas.length,'lojas']]
+    .map(([v,k])=>`<span class="stat"><span class="v">${v}</span>${k}</span>`).join('');
+  auth.innerHTML=sessao
+    ? `<span class="pill">${esc(sessao.user.email)}${ehAdm?' · adm':''}</span>
+       <button class="btn ghost" style="padding:4px 10px;margin-left:6px" data-sair>Sair</button>`
+    : `<button class="btn ghost" style="padding:4px 10px" data-entrar>Entrar</button>`;
+  tabs.innerHTML=ABAS().map(([k,n])=>
+    `<button role="tab" data-aba="${k}" class="${k==='novo'?'adm':''}" aria-selected="${k===aba}">${n}</button>`).join('');
+}
+
+function secJogadores(){
+  const d=D[fmt], lista=d.jogadores.filter(p=>bate(p.user));
+  let h=`<div class="shead"><h2>Jogadores</h2><span class="hint">toque num nome para ver o histórico</span></div>
+  <p class="note">Ordenado por média ajustada. A barra sob o nome é a mistura de domínios que a pessoa pilota.</p>`;
+  if(!lista.length) return h+`<p class="empty">Ninguém com esse nome. Tente outro trecho.</p>`;
+  h+=`<div class="colhead"><span></span><span>Jogador</span><span>Pts/jogo</span><span>Torneios</span></div>`;
+  return h+lista.map(p=>{
+    const pos=d.jogadores.indexOf(p)+1;
+    const det=aberto===p.user?`<div class="detail"><div class="kv">
+      <div>Melhor colocação<b>${p.melhorcol}º</b></div><div>Top-3<b>${p.top3}%</b></div>
+      <div>Sequência top-3<b>${p.seq}</b></div><div>Lendas usadas<b>${p.variedade}</b></div>
+      <div>Games vencidos<b>${p.gw}%</b></div><div>Pontos<b>${p.pts}</b></div></div>
+      <table><thead><tr><th>Data</th><th>Loja</th><th>Lenda</th><th>Col.</th><th>V-D-E</th><th>Pts</th></tr></thead>
+      <tbody>${p.hist.slice().reverse().map(e=>`<tr><td class="n">${e.data}</td><td>${esc(e.loja)}</td>
+      <td>${dots(e.d1,e.d2)}${esc(e.lenda)}</td><td class="n">${e.rank}º</td>
+      <td class="n">${e.vde}</td><td class="n">${e.pts}</td></tr>`).join('')}</tbody></table></div>`:'';
+    return `<div class="prow" tabindex="0" role="button" aria-expanded="${aberto===p.user}" data-user="${esc(p.user)}">
+      <span class="pos num">${pos}</span>
+      <span><span class="nm">${esc(p.user)}</span>${fp(p.mix,'fp')}</span>
+      <span class="adj">${p.adj.toFixed(2)}</span><span class="tn">${p.torneios}x</span></div>${det}`;
+  }).join('');
+}
+
+function secLendas(){
+  const d=D[fmt], lista=d.lendas.filter(l=>bate(l.curto));
+  const max=Math.max(...d.lendas.map(l=>l.n));
+  let h=`<div class="shead"><h2>Lendas</h2><span class="hint">${d.lendas.length} vistas em mesa</span></div>
+  <p class="note">Barra = quantas vezes foi jogada, dividida nos dois domínios da lenda.</p>`;
+  if(!lista.length) return h+`<p class="empty">Nenhuma lenda com esse nome.</p>`;
+  return h+`<table><thead><tr><th>Lenda</th><th>Uso</th><th>Méd.</th><th>GW</th>
+    <th>Melhor piloto</th><th>Estreia</th></tr></thead><tbody>`+
+    lista.map(l=>`<tr><td>${dots(l.d1,l.d2)}<b>${esc(l.curto)}</b></td>
+    <td style="min-width:110px"><div class="barline" style="margin:0">
+      <span class="track"><span class="fill" style="width:${l.n/max*100}%;background:linear-gradient(90deg,${COR[l.d1]} 50%,${COR[l.d2]} 50%)"></span></span>
+      <span class="val">${l.n}</span></div></td>
+    <td class="n">${l.adj.toFixed(2)}</td><td class="n">${l.gw}%</td>
+    <td>${esc(l.pilotos[0].user)} <span class="pill">${l.pilotos[0].adj.toFixed(2)}</span></td>
+    <td class="n">${l.estreia}</td></tr>`).join('')+`</tbody></table>`;
+}
+
+function secDominios(){
+  const d=D[fmt];
+  const mx=Math.max(...d.dominios.map(x=>x.n)), mp=Math.max(...d.dominios.map(x=>x.pts));
+  return `<div class="shead"><h2>Domínios</h2><span class="hint">frequência × rendimento</span></div>
+  <p class="note">Cada deck conta nos seus dois domínios. Pontos por jogo aqui é o valor cru, sem ajuste.</p>
+  <div class="grid2">
+    <div class="card"><h3>Quantos decks</h3>${d.dominios.map(x=>`<div class="barline">
+      <span class="lbl">${x.nome}</span><span class="track"><span class="fill" style="width:${x.n/mx*100}%;background:${COR[x.nome]}"></span></span>
+      <span class="val">${x.n} · ${x.share}%</span></div>`).join('')}</div>
+    <div class="card"><h3>Pontos por jogo</h3>${d.dominios.map(x=>`<div class="barline">
+      <span class="lbl">${x.nome}</span><span class="track"><span class="fill" style="width:${x.pts/mp*100}%;background:${COR[x.nome]}"></span></span>
+      <span class="val">${x.pts.toFixed(2)}</span></div>`).join('')}</div></div>
+  <div class="card" style="margin-top:16px"><h3>Lojas</h3><table><thead><tr><th>Loja</th>
+  <th>Torneios</th><th>Média de jogadores</th><th>Maior</th><th>GW médio</th></tr></thead><tbody>
+  ${d.lojas.map(l=>`<tr><td>${esc(l.loja)}</td><td class="n">${l.torneios}</td>
+  <td class="n">${l.media}</td><td class="n">${l.maior}</td><td class="n">${l.gw}%</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+function secCoroas(){
+  const d=D[fmt];
+  const lista=d.coroas.filter(c=>bate(c.user)||bate(c.s1.join(' '))||bate(c.s2.join(' ')));
+  let h=`<div class="shead"><h2>Coroas</h2><span class="hint">top-3 de cada lenda</span></div>
+  <p class="note">Em cada lenda, os 3 melhores pilotos por média ajustada ganham 4·2·1 mais 1 ponto
+  por piloto superado. A coroa (1º lugar) vem em dourado.</p>`;
+  if(!lista.length) return h+`<p class="empty">Nada com esse nome.</p>`;
+  return h+`<table><thead><tr><th>Pts</th><th>Jogador</th><th>Coroas</th><th>2º</th><th>3º</th></tr></thead><tbody>`+
+    lista.map(c=>`<tr><td class="n" style="color:var(--gold);font-weight:600">${c.pts}</td>
+    <td><b>${esc(c.user)}</b></td><td class="crown">${c.s1.length?esc(c.s1.join(', ')):'—'}</td>
+    <td style="color:var(--teal)">${c.s2.length?esc(c.s2.join(', ')):'—'}</td>
+    <td style="color:var(--sub)">${c.s3.length?esc(c.s3.join(', ')):'—'}</td></tr>`).join('')+`</tbody></table>`;
+}
+
+function secTorneios(){
+  const d=D[fmt];
+  const lista=d.torneios.filter(t=>bate(t.loja)||bate(t.campeao)||bate(t.lenda)||bate(t.cidade));
+  let h=`<div class="shead"><h2>Torneios</h2><span class="hint">do mais recente pro mais antigo</span></div>
+  <p class="note">Toque numa linha para ver a tabela final.</p>`;
+  if(!lista.length) return h+`<p class="empty">Nenhum torneio com esse filtro.</p>`;
+  return h+lista.map((t,i)=>{
+    const id='t'+i;
+    const det=aberto===id?`<div class="detail"><table><thead><tr><th>#</th><th>Jogador</th>
+      <th>Lenda</th><th>V-D-E</th><th>Pts</th></tr></thead><tbody>
+      ${t.tabela.map(r=>`<tr><td class="n">${r.rank}º</td><td>${esc(r.user)}</td>
+      <td>${dots(r.d1,r.d2)}${esc(r.lenda)}</td><td class="n">${r.vde}</td>
+      <td class="n">${r.pts}</td></tr>`).join('')}</tbody></table></div>`:'';
+    return `<div class="prow" tabindex="0" role="button" aria-expanded="${aberto===id}" data-tor="${id}">
+      <span class="pos num">${t.data}</span>
+      <span><span class="nm">${esc(t.loja)} <span class="pill">${esc(t.cidade)}</span></span>
+      <div style="font-size:12.5px;color:var(--sub);margin-top:2px">${dots(t.d1,t.d2)}${esc(t.campeao)} · ${esc(t.lenda)}</div></span>
+      <span class="adj">${t.n}<small>jogadores</small></span>
+      <span class="tn">${t.emp} emp.</span></div>${det}`;
+  }).join('');
+}
+
+function secMeta(){
+  const d=D[fmt];
+  return `<div class="shead"><h2>Meta por mês</h2><span class="hint">o que apareceu mais em mesa</span></div>
+  <p class="note">As 6 lendas mais jogadas de cada mês, com a fatia que ocuparam.</p>
+  <div class="grid2">${d.metames.map(m=>{
+    const mx=Math.max(...m.lendas.map(l=>l.n));
+    return `<div class="card"><h3>${m.mes} <span class="pill">${m.total} decks</span></h3>
+    ${m.lendas.map(l=>`<div class="barline"><span class="lbl">${esc(l.nome)}</span>
+      <span class="track"><span class="fill" style="width:${l.n/mx*100}%;background:var(--teal)"></span></span>
+      <span class="val">${l.share}%</span></div>`).join('')}</div>`;}).join('')}</div>`;
+}
+
+// ======================= CADASTRO =======================
+function parseStandings(txt){
+  const limpo=String(txt).replace(/\u00a0/g,' ').split('\n').map(l=>l.trim())
+    .filter(l=>l&&!/^(rank|points|record|omw|gw|ogw|status|previous round|standings)/i.test(l)).join(' ');
+  const re=/(\d{1,2})\s+(.+?)\s+(\d{1,3})\s+(\d+)\s*-\s*(\d+)\s*-\s*(\d+)\s+([\d.]+)\s*%\s+([\d.]+)\s*%\s+([\d.]+)\s*%/g;
+  const out=[]; let m;
+  while((m=re.exec(limpo))!==null)
+    out.push({rank:+m[1],apelido:m[2].trim(),ptsLidos:+m[3],v:+m[4],d:+m[5],e:+m[6],
+              omw:+m[7]/100,gw:+m[8]/100,ogw:+m[9]/100,lenda_id:''});
+  return out;
+}
+
+function validar(){
+  const p=[];
+  if(!revisao||!revisao.length) return p;
+  const conhecidos=new Set(RAW.map(r=>r.apelido));
+  revisao.forEach(r=>{
+    if(r.ptsLidos!==3*r.v+r.e)
+      p.push(`${r.apelido}: a plataforma diz ${r.ptsLidos} pts, mas 3·${r.v}+${r.e} = ${3*r.v+r.e}. Confira o placar.`);
+    if(!r.lenda_id) p.push(`${r.apelido}: falta escolher a lenda.`);
+    if(!r.apelido) p.push(`Colocação ${r.rank}: apelido em branco.`);
+  });
+  const emp=revisao.reduce((s,r)=>s+r.e,0);
+  if(emp%2) p.push(`Total de empates é ${emp}, um número ímpar — cada empate conta para dois jogadores.`);
+  const ranks=revisao.map(r=>r.rank).sort((a,b)=>a-b);
+  if(new Set(ranks).size!==ranks.length) p.push('Há colocações repetidas.');
+  const dup=RAW.some(r=>r.data.slice(0,10)===f_data.value&&r.loja===(LOJAS.find(l=>l.id==+f_loja.value)||{}).nome);
+  if(dup) p.push('Já existe um torneio dessa loja nessa data. O banco vai recusar.');
+  const novos=revisao.filter(r=>!conhecidos.has(r.apelido)).map(r=>r.apelido);
+  return {problemas:p,novos};
+}
+
+function secNovo(){
+  if(!ehAdm) return `<p class="empty">Só administradores cadastram torneio.</p>`;
+  const hoje=new Date().toISOString().slice(0,10);
+  const v=revisao?validar():{problemas:[],novos:[]};
+  let h=`<div class="shead"><h2>Novo torneio</h2><span class="hint">cole os standings do locator</span></div>
+  <p class="note">Os pontos são calculados pelo banco a partir de V e E — você não digita pontuação.</p>`;
+  if(msg) h+=`<div class="aviso ${msg.t}">${esc(msg.m)}</div>`;
+  h+=`<div class="formgrid">
+    <div><label for="f_data">Data</label><input type="date" id="f_data" value="${hoje}"></div>
+    <div><label for="f_hora">Hora</label><input type="time" id="f_hora" value="19:30"></div>
+    <div><label for="f_loja">Loja</label><select id="f_loja">${LOJAS.map(l=>
+      `<option value="${l.id}">${esc(l.nome)} — ${esc(l.cidade)}</option>`).join('')}</select></div>
+    <div><label for="f_evento">Nome do evento</label><input id="f_evento" placeholder="Wednesday Evening Nexus Nights - 1v1"></div>
+    <div><label for="f_formato">Formato</label><input id="f_formato" value="1v1 · Suíço (3 rodadas)"></div>
+  </div>
+  <label for="f_cola" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600">Standings colados</label>
+  <textarea id="f_cola" rows="7" placeholder="1 Buzuka 7 2-0-1 51.9% 72.2% 54.1% Active&#10;2 OK3N4G 7 2-0-1 44.3% 72.2% 46.0% Active&#10;…"></textarea>
+  <div style="margin:12px 0"><button class="btn" data-ler>Ler standings</button></div>`;
+
+  if(revisao){
+    if(!revisao.length) h+=`<div class="aviso erro">Não consegui achar nenhuma linha no texto colado.
+      Confira se copiou a tabela inteira, com colocação, placar e as três porcentagens.</div>`;
+    else{
+      if(v.problemas.length) h+=`<div class="aviso erro"><b>Corrija antes de salvar:</b><ul>${
+        v.problemas.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>`;
+      if(v.novos.length) h+=`<div class="aviso info">Jogadores novos, serão criados: <b>${
+        v.novos.map(esc).join(', ')}</b></div>`;
+      h+=`<table class="rev"><thead><tr><th>#</th><th>Apelido</th><th>Lenda</th>
+        <th>V</th><th>D</th><th>E</th><th>Pts</th></tr></thead><tbody>`;
+      h+=revisao.map((r,i)=>`<tr>
+        <td class="n" style="width:34px">${r.rank}º</td>
+        <td><input data-i="${i}" data-c="apelido" value="${esc(r.apelido)}"></td>
+        <td><select data-i="${i}" data-c="lenda_id"><option value="">— escolha —</option>${
+          LENDAS.map(l=>`<option value="${l.id}" ${r.lenda_id==l.id?'selected':''}>${esc(l.nome_completo)}</option>`).join('')}</select></td>
+        <td><input class="n w-r" data-i="${i}" data-c="v" value="${r.v}"></td>
+        <td><input class="n w-r" data-i="${i}" data-c="d" value="${r.d}"></td>
+        <td><input class="n w-r" data-i="${i}" data-c="e" value="${r.e}"></td>
+        <td class="n w-p" style="color:var(--gold)">${3*r.v+r.e}</td></tr>`).join('');
+      h+=`</tbody></table>
+      <div style="margin:16px 0 30px;display:flex;gap:10px">
+        <button class="btn" data-salvar ${v.problemas.length?'disabled':''}>Salvar torneio</button>
+        <button class="btn ghost" data-cancelar>Cancelar</button></div>`;
+    }
+  }
+  return h;
+}
+
+async function salvar(){
+  const btn=document.querySelector('[data-salvar]');
+  if(btn){btn.disabled=true;btn.textContent='Salvando…';}
+  try{
+    const dataISO=`${f_data.value}T${f_hora.value}:00`;
+    const lojaId=+f_loja.value;
+    const conhecidos=new Map(RAW.map(r=>[r.apelido,null]));
+    const novos=revisao.filter(r=>!conhecidos.has(r.apelido)).map(r=>r.apelido);
+    if(novos.length){
+      const {error}=await sb.from('jogadores').insert(novos.map(a=>({apelido:a})));
+      if(error) throw error;
+    }
+    const {data:jogs,error:eJ}=await sb.from('jogadores').select('id,apelido')
+      .in('apelido',revisao.map(r=>r.apelido));
+    if(eJ) throw eJ;
+    const idPorApelido=new Map(jogs.map(j=>[j.apelido,j.id]));
+
+    const {data:tor,error:eT}=await sb.from('torneios').insert({
+      data:dataISO, loja_id:lojaId, evento:f_evento.value.trim()||'Torneio',
+      formato:f_formato.value.trim()||'1v1'}).select('id').single();
+    if(eT) throw eT;
+
+    const {error:eP}=await sb.from('participacoes').insert(revisao.map(r=>({
+      torneio_id:tor.id, jogador_id:idPorApelido.get(r.apelido), lenda_id:+r.lenda_id,
+      colocacao:r.rank, vitorias:r.v, derrotas:r.d, empates:r.e,
+      omw:r.omw, gw:r.gw, ogw:r.ogw})));
+    if(eP){ await sb.from('torneios').delete().eq('id',tor.id); throw eP; }
+
+    msg={t:'ok',m:`Torneio salvo com ${revisao.length} jogadores. O ranking já está atualizado.`};
+    revisao=null;
+    await carregar();
+  }catch(e){
+    msg={t:'erro',m:'Não deu para salvar: '+(e.message||e)+' — nada foi gravado.'};
+  }
+  pinta();
+}
+
+// ======================= LOGIN =======================
+function abrirLogin(){
+  const div=document.createElement('div');
+  div.className='overlay'; div.id='loginOverlay';
+  div.innerHTML=`<div class="modal"><h3>Entrar</h3>
+    <p>Só para quem organiza os torneios. Visitantes não precisam de conta.</p>
+    <input type="email" id="l_email" placeholder="seu e-mail" autocomplete="username">
+    <input type="password" id="l_senha" placeholder="senha" autocomplete="current-password">
+    <div id="l_erro" style="color:var(--erro);font-size:12.5px;min-height:18px;margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px"><button class="btn" id="l_ok">Entrar</button>
+    <button class="btn ghost" id="l_cancel">Cancelar</button></div></div>`;
+  document.body.appendChild(div);
+  l_cancel.onclick=()=>div.remove();
+  div.onclick=e=>{if(e.target===div)div.remove();};
+  l_ok.onclick=async()=>{
+    l_ok.disabled=true; l_erro.textContent='';
+    const {error}=await sb.auth.signInWithPassword({email:l_email.value.trim(),password:l_senha.value});
+    if(error){ l_erro.textContent='E-mail ou senha não conferem.'; l_ok.disabled=false; return; }
+    div.remove(); await verSessao(); pinta();
+  };
+  l_senha.onkeydown=e=>{if(e.key==='Enter')l_ok.click();};
+  l_email.focus();
+}
+
+function falhar(txt,detalhe){
+  carregando.style.display='';
+  carregando.innerHTML='<div class="aviso erro" style="text-align:left">'+esc(txt)+
+    (detalhe?'<br><span class="num" style="font-size:12px">'+esc(detalhe)+'</span>':'')+'</div>';
+}
+const comLimite=(pr,ms,oque)=>Promise.race([pr,
+  new Promise((_,rej)=>setTimeout(()=>rej(new Error(oque+' nao respondeu em '+(ms/1000)+'s.')),ms))]);
+
+// ======================= LOOP =======================
+const RENDER={jogadores:secJogadores,lendas:secLendas,dominios:secDominios,coroas:secCoroas,
+  torneios:secTorneios,meta:secMeta,novo:secNovo};
+
+function pinta(){
+  if(!D.all){ falhar('Sem dados para exibir.'); return; }
+  carregando.style.display='none';
+  topo();
+  if(aba==='novo'&&!ehAdm) aba='jogadores';
+  ABAS().forEach(([k])=>{
+    const el=document.getElementById('sec-'+k); if(!el) return;
+    el.classList.toggle('on',k===aba);
+    if(k===aba) el.innerHTML=RENDER[k]();
+  });
+  ['jogadores','lendas','dominios','coroas','torneios','meta','novo'].forEach(k=>{
+    const el=document.getElementById('sec-'+k);
+    if(el&&k!==aba) el.classList.remove('on');
+  });
+}
+
+document.addEventListener('click',async e=>{
+  const f=e.target.closest('[data-fmt]');
+  if(f){fmt=f.dataset.fmt;aberto=null;
+    document.querySelectorAll('[data-fmt]').forEach(b=>b.setAttribute('aria-pressed',b===f));pinta();return;}
+  const t=e.target.closest('[data-aba]'); if(t){aba=t.dataset.aba;aberto=null;msg=null;pinta();return;}
+  const p=e.target.closest('[data-user]'); if(p){aberto=aberto===p.dataset.user?null:p.dataset.user;pinta();return;}
+  const to=e.target.closest('[data-tor]'); if(to){aberto=aberto===to.dataset.tor?null:to.dataset.tor;pinta();return;}
+  if(e.target.closest('[data-entrar]')){abrirLogin();return;}
+  if(e.target.closest('[data-sair]')){await sb.auth.signOut();await verSessao();aba='jogadores';pinta();return;}
+  if(e.target.closest('[data-ler]')){revisao=parseStandings(f_cola.value);msg=null;pinta();return;}
+  if(e.target.closest('[data-cancelar]')){revisao=null;msg=null;pinta();return;}
+  if(e.target.closest('[data-salvar]')){await salvar();return;}
+});
+document.addEventListener('input',e=>{
+  const el=e.target.closest('[data-i]'); if(!el||!revisao) return;
+  const i=+el.dataset.i,c=el.dataset.c;
+  revisao[i][c]=['v','d','e'].includes(c)?(parseInt(el.value,10)||0):el.value;
+  if(['v','e'].includes(c)) revisao[i].ptsLidos=3*revisao[i].v+revisao[i].e;
+});
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('prow')){e.preventDefault();e.target.click();}
+});
+busca.addEventListener('input',e=>{busca=e.target.value.trim().toLowerCase();aberto=null;pinta();});
+
+(async()=>{
+  try{
+    await comLimite(verSessao(),10000,'A verificacao de sessao');
+    await comLimite(carregar(),15000,'A consulta ao banco');
+    pinta();
+  }catch(e){
+    falhar(e.vazio?'O banco respondeu, mas sem nenhuma linha.'
+                  :'Não consegui carregar os dados do banco.', e.message||String(e));
+  }
+})();
+</script>
+</body>
+</html>
