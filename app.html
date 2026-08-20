@@ -495,14 +495,25 @@ function secMeta(){
 }
 
 // ======================= CADASTRO =======================
+// o locator repete o apelido (avatar + texto): "ZkV ZkV" -> "ZkV", "lazy cat lazy cat" -> "lazy cat"
+function desdobrar(nome){
+  const p=String(nome).trim().split(/\s+/);
+  if(p.length>1 && p.length%2===0){
+    const meio=p.length/2;
+    if(p.slice(0,meio).join(' ')===p.slice(meio).join(' ')) return p.slice(0,meio).join(' ');
+  }
+  return p.join(' ');
+}
+const pct=v=>+(parseFloat(v)/100).toFixed(4);
+
 function parseStandings(txt){
   const limpo=String(txt).replace(/\u00a0/g,' ').split('\n').map(l=>l.trim())
     .filter(l=>l&&!/^(rank|points|record|omw|gw|ogw|status|previous round|standings)/i.test(l)).join(' ');
   const re=/(\d{1,2})\s+(.+?)\s+(\d{1,3})\s+(\d+)\s*-\s*(\d+)\s*-\s*(\d+)\s+([\d.]+)\s*%\s+([\d.]+)\s*%\s+([\d.]+)\s*%/g;
   const out=[]; let m;
   while((m=re.exec(limpo))!==null)
-    out.push({rank:+m[1],apelido:m[2].trim(),ptsLidos:+m[3],v:+m[4],d:+m[5],e:+m[6],
-              omw:+m[7]/100,gw:+m[8]/100,ogw:+m[9]/100,lenda_id:''});
+    out.push({rank:+m[1],apelido:desdobrar(m[2]),ptsLidos:+m[3],v:+m[4],d:+m[5],e:+m[6],
+              omw:pct(m[7]),gw:pct(m[8]),ogw:pct(m[9]),lenda_id:''});
   return out;
 }
 
@@ -636,7 +647,7 @@ function abrirLogin(){
 
 let t0=Date.now(), tickId=setInterval(()=>{
   const el=document.getElementById('tick');
-  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v4)';
+  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v5)';
 },1000);
 function falhar(txt,detalhe){
   clearInterval(tickId);
