@@ -219,7 +219,7 @@ const COR={Fury:'#E24A3B',Calm:'#34A85A',Body:'#E8923A',Mind:'#3F82D6',Order:'#E
 const MES={5:'mai',6:'jun',7:'jul',8:'ago',9:'set',10:'out',11:'nov',12:'dez'};
 const PRIOR=6, BASE=[4,2,1];
 
-let RAW=[], LENDAS=[], LOJAS=[], D={}, sessao=null, ehAdm=false;
+let RAW=[], LENDAS=[], LOJAS=[], D={}, sessao=null, ehAdm=false, admErro=null;
 let fmt='all', aba='jogadores', busca='', aberto=null, revisao=null, msg=null;
 
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -355,8 +355,10 @@ async function verSessao(){
   const {data}=await sb.auth.getSession();
   sessao=data.session;
   ehAdm=false;
+  admErro=null;
   if(sessao){
-    const {data:a}=await sb.from('adms').select('user_id').eq('user_id',sessao.user.id).maybeSingle();
+    const {data:a,error}=await sb.from('adms').select('user_id').eq('user_id',sessao.user.id).maybeSingle();
+    if(error) admErro=error.message;
     ehAdm=!!a;
   }
 }
@@ -377,7 +379,8 @@ function topo(){
     [m.campeoes,'lendas vistas'],[d.lojas.length,'lojas']]
     .map(([v,k])=>`<span class="stat"><span class="v">${v}</span>${k}</span>`).join('');
   auth.innerHTML=sessao
-    ? `<span class="pill">${esc(sessao.user.email)}${ehAdm?' · adm':''}</span>
+    ? `<span class="pill" title="${esc(admErro||'')}">${esc(sessao.user.email)}${
+        ehAdm?' · adm':(admErro?' · erro ao checar adm':' · sem permissão de adm')}</span>
        <button class="btn ghost" style="padding:4px 10px;margin-left:6px" data-sair>Sair</button>`
     : `<button class="btn ghost" style="padding:4px 10px" data-entrar>Entrar</button>`;
   tabs.innerHTML=ABAS().map(([k,n])=>
@@ -633,7 +636,7 @@ function abrirLogin(){
 
 let t0=Date.now(), tickId=setInterval(()=>{
   const el=document.getElementById('tick');
-  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v3)';
+  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v4)';
 },1000);
 function falhar(txt,detalhe){
   clearInterval(tickId);
