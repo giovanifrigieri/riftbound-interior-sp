@@ -192,8 +192,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:18px 0 40px;colo
 </main>
 
 <footer class="wrap">
-  Média ajustada = (pontos + 6 × média da liga) ÷ (jogos + 6) — quem jogou pouco é puxado
-  pro meio da liga. Pontos = 3 × vitórias + empates, calculado pelo banco.
+  Ranking geral: média ajustada = (pontos + 6 × média da liga) ÷ (jogos + 6).
+  Dentro de cada lenda: (pontos + 10 × média da lenda) ÷ (jogos + 10) — peso maior, para que
+  poucos jogos com uma carta não superem quem a pilota há uma temporada.
+  Pontos = 3 × vitórias + empates, calculado pelo banco.
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -218,6 +220,9 @@ const ORDEM=['Fury','Calm','Body','Mind','Order','Chaos'];
 const COR={Fury:'#E24A3B',Calm:'#34A85A',Body:'#E8923A',Mind:'#3F82D6',Order:'#E6C23C',Chaos:'#9A5FD0'};
 const MES={5:'mai',6:'jun',7:'jul',8:'ago',9:'set',10:'out',11:'nov',12:'dez'};
 const PRIOR=6, BASE=[4,2,1];
+// Dentro de uma lenda o prior e maior e a regressao vai para a media DA LENDA,
+// nao para a da liga: amostra pequena paga pedagio, amostra grande fala por si.
+const PRIOR_LENDA=10;
 
 let RAW=[], LENDAS=[], LOJAS=[], D={}, sessao=null, ehAdm=false, admErro=null;
 let fmt='all', aba='jogadores', busca='', aberto=null, revisao=null, msg=null;
@@ -277,9 +282,11 @@ function montar(rows){
   const porLeg=grupo(rows,z=>z.lenda_curta);
   const lendas=Object.entries(porLeg).map(([lg,g])=>{
     const pil=grupo(g,z=>z.apelido);
-    const pilotos=Object.entries(pil).map(([u,t])=>({user:u,adj:+ADJ(pontos(t),jogos(t)).toFixed(2),
+    const muL=pontos(g)/jogos(g);
+    const ADJL=(P,G)=>(P+PRIOR_LENDA*muL)/(G+PRIOR_LENDA);
+    const pilotos=Object.entries(pil).map(([u,t])=>({user:u,adj:+ADJL(pontos(t),jogos(t)).toFixed(2),
       n:t.length,gw:Math.round(t.reduce((s,z)=>s+(z.gw||0),0)/t.length*100)}))
-      .sort((a,b)=>b.adj-a.adj);
+      .sort((a,b)=>b.adj-a.adj || b.n-a.n || a.user.localeCompare(b.user));
     const est=g.reduce((a,b)=>a.data<b.data?a:b);
     return {curto:lg,d1:g[0].dominio1,d2:g[0].dominio2,n:g.length,
       adj:+ADJ(pontos(g),jogos(g)).toFixed(2),
@@ -298,8 +305,10 @@ function montar(rows){
   const sc={};
   Object.entries(porLeg).forEach(([lg,g])=>{
     const pil=grupo(g,z=>z.apelido), N=Object.keys(pil).length;
-    Object.entries(pil).map(([u,t])=>[u,ADJ(pontos(t),jogos(t))])
-      .sort((a,b)=>b[1]-a[1]).slice(0,3)
+    const muL=pontos(g)/jogos(g);
+    const ADJL=(P,G)=>(P+PRIOR_LENDA*muL)/(G+PRIOR_LENDA);
+    Object.entries(pil).map(([u,t])=>[u,ADJL(pontos(t),jogos(t)),t.length])
+      .sort((a,b)=>b[1]-a[1] || b[2]-a[2] || a[0].localeCompare(b[0])).slice(0,3)
       .forEach(([u],i)=>{sc[u]=sc[u]||{pts:0,s1:[],s2:[],s3:[]};
         sc[u].pts+=BASE[i]+(N-1-i); sc[u][['s1','s2','s3'][i]].push(lg);});
   });
@@ -416,7 +425,9 @@ function secLendas(){
   const d=D[fmt], lista=d.lendas.filter(l=>bate(l.curto));
   const max=Math.max(...d.lendas.map(l=>l.n));
   let h=`<div class="shead"><h2>Lendas</h2><span class="hint">${d.lendas.length} vistas em mesa</span></div>
-  <p class="note">Barra = quantas vezes foi jogada, dividida nos dois domínios da lenda.</p>`;
+  <p class="note">Barra = quantas vezes foi jogada, dividida nos dois domínios da lenda.
+  A coluna <b>Méd.</b> compara a lenda com a liga; o <b>melhor piloto</b> é medido dentro da própria
+  lenda, com peso maior para quem tem mais jogos com ela.</p>`;
   if(!lista.length) return h+`<p class="empty">Nenhuma lenda com esse nome.</p>`;
   return h+`<table><thead><tr><th>Lenda</th><th>Uso</th><th>Méd.</th><th>GW</th>
     <th>Melhor piloto</th><th>Estreia</th></tr></thead><tbody>`+
@@ -452,8 +463,9 @@ function secCoroas(){
   const d=D[fmt];
   const lista=d.coroas.filter(c=>bate(c.user)||bate(c.s1.join(' '))||bate(c.s2.join(' ')));
   let h=`<div class="shead"><h2>Coroas</h2><span class="hint">top-3 de cada lenda</span></div>
-  <p class="note">Em cada lenda, os 3 melhores pilotos por média ajustada ganham 4·2·1 mais 1 ponto
-  por piloto superado. A coroa (1º lugar) vem em dourado.</p>`;
+  <p class="note">Em cada lenda, os 3 melhores pilotos ganham 4·2·1 mais 1 ponto por piloto superado.
+  A coroa (1º lugar) vem em dourado. O desempenho aqui é comparado dentro da própria lenda:
+  quem jogou pouco é puxado para a média da carta, então um torneio isolado não supera uma temporada.</p>`;
   if(!lista.length) return h+`<p class="empty">Nada com esse nome.</p>`;
   return h+`<table><thead><tr><th>Pts</th><th>Jogador</th><th>Coroas</th><th>2º</th><th>3º</th></tr></thead><tbody>`+
     lista.map(c=>`<tr><td class="n" style="color:var(--gold);font-weight:600">${c.pts}</td>
@@ -738,7 +750,7 @@ function abrirLogin(){
 
 let t0=Date.now(), tickId=setInterval(()=>{
   const el=document.getElementById('tick');
-  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v7)';
+  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v8)';
 },1000);
 function falhar(txt,detalhe){
   clearInterval(tickId);
