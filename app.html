@@ -537,6 +537,30 @@ function validar(){
   return {problemas:p,novos};
 }
 
+function htmlValid(v){
+  let h='';
+  if(v.problemas.length) h+=`<div class="aviso erro"><b>Corrija antes de salvar:</b><ul>${
+    v.problemas.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>`;
+  else h+=`<div class="aviso ok">Tudo certo. Pode salvar.</div>`;
+  if(v.novos.length) h+=`<div class="aviso info">Jogadores novos, serão criados: <b>${
+    v.novos.map(esc).join(', ')}</b></div>`;
+  return h;
+}
+
+// revalida sem redesenhar a tabela — assim o cursor nao pula de campo
+function atualizarValidacao(){
+  if(!revisao) return;
+  const v=validar();
+  const painel=document.getElementById('painelValid');
+  if(painel) painel.innerHTML=htmlValid(v);
+  const btn=document.getElementById('btnSalvar');
+  if(btn) btn.disabled=v.problemas.length>0;
+  revisao.forEach((r,i)=>{
+    const td=document.getElementById('pts-'+i);
+    if(td) td.textContent=3*r.v+r.e;
+  });
+}
+
 function secNovo(){
   if(!ehAdm) return `<p class="empty">Só administradores cadastram torneio.</p>`;
   const hoje=new Date().toISOString().slice(0,10);
@@ -560,10 +584,7 @@ function secNovo(){
     if(!revisao.length) h+=`<div class="aviso erro">Não consegui achar nenhuma linha no texto colado.
       Confira se copiou a tabela inteira, com colocação, placar e as três porcentagens.</div>`;
     else{
-      if(v.problemas.length) h+=`<div class="aviso erro"><b>Corrija antes de salvar:</b><ul>${
-        v.problemas.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>`;
-      if(v.novos.length) h+=`<div class="aviso info">Jogadores novos, serão criados: <b>${
-        v.novos.map(esc).join(', ')}</b></div>`;
+      h+=`<div id="painelValid">${htmlValid(v)}</div>`;
       h+=`<table class="rev"><thead><tr><th>#</th><th>Apelido</th><th>Lenda</th>
         <th>V</th><th>D</th><th>E</th><th>Pts</th></tr></thead><tbody>`;
       h+=revisao.map((r,i)=>`<tr>
@@ -574,10 +595,10 @@ function secNovo(){
         <td><input class="n w-r" data-i="${i}" data-c="v" value="${r.v}"></td>
         <td><input class="n w-r" data-i="${i}" data-c="d" value="${r.d}"></td>
         <td><input class="n w-r" data-i="${i}" data-c="e" value="${r.e}"></td>
-        <td class="n w-p" style="color:var(--gold)">${3*r.v+r.e}</td></tr>`).join('');
+        <td class="n w-p" id="pts-${i}" style="color:var(--gold)">${3*r.v+r.e}</td></tr>`).join('');
       h+=`</tbody></table>
       <div style="margin:16px 0 30px;display:flex;gap:10px">
-        <button class="btn" data-salvar ${v.problemas.length?'disabled':''}>Salvar torneio</button>
+        <button class="btn" id="btnSalvar" data-salvar ${v.problemas.length?'disabled':''}>Salvar torneio</button>
         <button class="btn ghost" data-cancelar>Cancelar</button></div>`;
     }
   }
@@ -647,7 +668,7 @@ function abrirLogin(){
 
 let t0=Date.now(), tickId=setInterval(()=>{
   const el=document.getElementById('tick');
-  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v5)';
+  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v6)';
 },1000);
 function falhar(txt,detalhe){
   clearInterval(tickId);
@@ -692,11 +713,18 @@ document.addEventListener('click',async e=>{
   if(e.target.closest('[data-cancelar]')){revisao=null;msg=null;pinta();return;}
   if(e.target.closest('[data-salvar]')){await salvar();return;}
 });
-document.addEventListener('input',e=>{
+function aoEditarLinha(e){
   const el=e.target.closest('[data-i]'); if(!el||!revisao) return;
   const i=+el.dataset.i,c=el.dataset.c;
   revisao[i][c]=['v','d','e'].includes(c)?(parseInt(el.value,10)||0):el.value;
   if(['v','e'].includes(c)) revisao[i].ptsLidos=3*revisao[i].v+revisao[i].e;
+  atualizarValidacao();
+}
+document.addEventListener('input',aoEditarLinha);
+document.addEventListener('change',aoEditarLinha);
+// os campos de data/hora/loja tambem entram na validacao de duplicata
+['f_data','f_hora','f_loja'].forEach(id=>{
+  document.addEventListener('change',e=>{ if(e.target.id===id) atualizarValidacao(); });
 });
 document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('prow')){e.preventDefault();e.target.click();}
