@@ -221,6 +221,8 @@ const PRIOR=6, BASE=[4,2,1];
 
 let RAW=[], LENDAS=[], LOJAS=[], D={}, sessao=null, ehAdm=false, admErro=null;
 let fmt='all', aba='jogadores', busca='', aberto=null, revisao=null, msg=null;
+let editandoId=null;
+let formTor={data:'',hora:'19:30',loja_id:'',evento:'',formato:'1v1 · Suíço (3 rodadas)'};
 
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dots=(a,b)=>`<span class="dots"><i style="background:${COR[a]}"></i><i style="background:${COR[b]}"></i></span>`;
@@ -245,7 +247,7 @@ function montar(rows){
   const chaves=Object.keys(porTor).sort();
   const torneios=chaves.map(k=>{
     const g=porTor[k].slice().sort((a,b)=>a.colocacao-b.colocacao), ch=g[0];
-    return {data:dia(g[0].data), iso:g[0].data, loja:g[0].loja, cidade:g[0].cidade,
+    return {id:g[0].torneio_id, data:dia(g[0].data), iso:g[0].data, loja:g[0].loja, cidade:g[0].cidade,
       evento:g[0].evento, n:g.length, campeao:ch.apelido, lenda:ch.lenda_curta,
       d1:ch.dominio1, d2:ch.dominio2, vde:`${ch.vitorias}-${ch.derrotas}-${ch.empates}`,
       pts:ch.pontos, gw:Math.round(g.reduce((s,z)=>s+(z.gw||0),0)/g.length*100),
@@ -366,7 +368,7 @@ async function verSessao(){
 // ======================= RENDER =======================
 const ABAS=()=>[['jogadores','Jogadores'],['lendas','Lendas'],['dominios','Domínios'],
   ['coroas','Coroas'],['torneios','Torneios'],['meta','Meta por mês']]
-  .concat(ehAdm?[['novo','+ Novo torneio']]:[]);
+  .concat(ehAdm?[['novo',editandoId!==null?'✎ Editando':'+ Novo torneio']]:[]);
 
 function topo(){
   const d=D[fmt]; if(!d) return;
@@ -472,7 +474,11 @@ function secTorneios(){
       <th>Lenda</th><th>V-D-E</th><th>Pts</th></tr></thead><tbody>
       ${t.tabela.map(r=>`<tr><td class="n">${r.rank}º</td><td>${esc(r.user)}</td>
       <td>${dots(r.d1,r.d2)}${esc(r.lenda)}</td><td class="n">${r.vde}</td>
-      <td class="n">${r.pts}</td></tr>`).join('')}</tbody></table></div>`:'';
+      <td class="n">${r.pts}</td></tr>`).join('')}</tbody></table>
+      ${ehAdm?`<div style="margin-top:11px;display:flex;gap:8px">
+        <button class="btn ghost" data-editar="${t.id}">Editar</button>
+        <button class="btn ghost" style="color:var(--erro)" data-apagar="${t.id}">Apagar</button></div>`:''}
+      </div>`:'';
     return `<div class="prow" tabindex="0" role="button" aria-expanded="${aberto===id}" data-tor="${id}">
       <span class="pos num">${t.data}</span>
       <span><span class="nm">${esc(t.loja)} <span class="pill">${esc(t.cidade)}</span></span>
@@ -519,8 +525,11 @@ function parseStandings(txt){
 
 function validar(){
   const p=[];
-  if(!revisao||!revisao.length) return p;
+  if(!revisao||!revisao.length) return {problemas:p,novos:[]};
   const conhecidos=new Set(RAW.map(r=>r.apelido));
+  if(!formTor.loja_id) p.push('Escolha a loja.');
+  if(!formTor.data) p.push('Escolha a data.');
+  if(!formTor.evento.trim()) p.push('Dê um nome ao evento (é o que separa Nexus Night de Skirmish).');
   revisao.forEach(r=>{
     if(r.ptsLidos!==3*r.v+r.e)
       p.push(`${r.apelido}: a plataforma diz ${r.ptsLidos} pts, mas 3·${r.v}+${r.e} = ${3*r.v+r.e}. Confira o placar.`);
@@ -531,9 +540,13 @@ function validar(){
   if(emp%2) p.push(`Total de empates é ${emp}, um número ímpar — cada empate conta para dois jogadores.`);
   const ranks=revisao.map(r=>r.rank).sort((a,b)=>a-b);
   if(new Set(ranks).size!==ranks.length) p.push('Há colocações repetidas.');
-  const dup=RAW.some(r=>r.data.slice(0,10)===f_data.value&&r.loja===(LOJAS.find(l=>l.id==+f_loja.value)||{}).nome);
+  const apel=revisao.map(r=>r.apelido.toLowerCase());
+  if(new Set(apel).size!==apel.length) p.push('Há apelidos repetidos.');
+  const lojaNome=(LOJAS.find(l=>l.id==+formTor.loja_id)||{}).nome;
+  const dup=RAW.some(r=>r.data.slice(0,10)===formTor.data && r.loja===lojaNome
+                        && r.torneio_id!==editandoId);
   if(dup) p.push('Já existe um torneio dessa loja nessa data. O banco vai recusar.');
-  const novos=revisao.filter(r=>!conhecidos.has(r.apelido)).map(r=>r.apelido);
+  const novos=[...new Set(revisao.filter(r=>!conhecidos.has(r.apelido)).map(r=>r.apelido))];
   return {problemas:p,novos};
 }
 
@@ -561,25 +574,64 @@ function atualizarValidacao(){
   });
 }
 
+function limparForm(){
+  formTor={data:'',hora:'19:30',loja_id:'',evento:'',formato:'1v1 · Suíço (3 rodadas)'};
+  revisao=null; editandoId=null;
+}
+
+// carrega um torneio existente no formulario
+function editarTorneio(id){
+  const linhas=RAW.filter(r=>r.torneio_id===id).sort((a,b)=>a.colocacao-b.colocacao);
+  if(!linhas.length) return;
+  const p0=linhas[0];
+  formTor={
+    data:p0.data.slice(0,10), hora:p0.data.slice(11,16),
+    loja_id:String((LOJAS.find(l=>l.nome===p0.loja)||{}).id||''),
+    evento:p0.evento||'', formato:p0.formato||'1v1'
+  };
+  revisao=linhas.map(r=>({
+    rank:r.colocacao, apelido:r.apelido, ptsLidos:r.pontos,
+    v:r.vitorias, d:r.derrotas, e:r.empates,
+    omw:r.omw, gw:r.gw, ogw:r.ogw,
+    lenda_id:String((LENDAS.find(l=>l.nome_completo===r.lenda)||{}).id||'')
+  }));
+  editandoId=id; aba='novo'; msg=null; pinta();
+}
+
+async function apagarTorneio(id){
+  const t=RAW.filter(r=>r.torneio_id===id);
+  const rotulo=t.length?`${dia(t[0].data)} · ${t[0].loja} · ${t.length} jogadores`:'esse torneio';
+  if(!confirm(`Apagar ${rotulo}?\n\nAs participações vão junto. Não tem como desfazer.`)) return;
+  const {error}=await sb.from('torneios').delete().eq('id',id);
+  msg = error ? {t:'erro',m:'Não deu para apagar: '+error.message}
+              : {t:'ok',m:'Torneio apagado.'};
+  if(!error){ aberto=null; await carregar(); }
+  pinta();
+}
+
 function secNovo(){
   if(!ehAdm) return `<p class="empty">Só administradores cadastram torneio.</p>`;
-  const hoje=new Date().toISOString().slice(0,10);
   const v=revisao?validar():{problemas:[],novos:[]};
-  let h=`<div class="shead"><h2>Novo torneio</h2><span class="hint">cole os standings do locator</span></div>
+  const editando=editandoId!==null;
+  let h=`<div class="shead"><h2>${editando?'Editar torneio':'Novo torneio'}</h2>
+    <span class="hint">${editando?'alterando um torneio já salvo':'cole os standings do locator'}</span></div>
   <p class="note">Os pontos são calculados pelo banco a partir de V e E — você não digita pontuação.</p>`;
   if(msg) h+=`<div class="aviso ${msg.t}">${esc(msg.m)}</div>`;
   h+=`<div class="formgrid">
-    <div><label for="f_data">Data</label><input type="date" id="f_data" value="${hoje}"></div>
-    <div><label for="f_hora">Hora</label><input type="time" id="f_hora" value="19:30"></div>
-    <div><label for="f_loja">Loja</label><select id="f_loja">${LOJAS.map(l=>
-      `<option value="${l.id}">${esc(l.nome)} — ${esc(l.cidade)}</option>`).join('')}</select></div>
-    <div><label for="f_evento">Nome do evento</label><input id="f_evento" placeholder="Wednesday Evening Nexus Nights - 1v1"></div>
-    <div><label for="f_formato">Formato</label><input id="f_formato" value="1v1 · Suíço (3 rodadas)"></div>
-  </div>
-  <label for="f_cola" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600">Standings colados</label>
-  <textarea id="f_cola" rows="7" placeholder="1 Buzuka 7 2-0-1 51.9% 72.2% 54.1% Active&#10;2 OK3N4G 7 2-0-1 44.3% 72.2% 46.0% Active&#10;…"></textarea>
-  <div style="margin:12px 0"><button class="btn" data-ler>Ler standings</button></div>`;
-
+    <div><label for="f_data">Data</label><input type="date" id="f_data" data-f="data" value="${formTor.data}"></div>
+    <div><label for="f_hora">Hora</label><input type="time" id="f_hora" data-f="hora" value="${formTor.hora}"></div>
+    <div><label for="f_loja">Loja</label><select id="f_loja" data-f="loja_id">
+      <option value="">— escolha a loja —</option>${LOJAS.map(l=>
+      `<option value="${l.id}" ${formTor.loja_id==l.id?'selected':''}>${esc(l.nome)} — ${esc(l.cidade)}</option>`).join('')}</select></div>
+    <div><label for="f_evento">Nome do evento</label><input id="f_evento" data-f="evento"
+      value="${esc(formTor.evento)}" placeholder="Wednesday Evening Nexus Nights - 1v1"></div>
+    <div><label for="f_formato">Formato</label><input id="f_formato" data-f="formato" value="${esc(formTor.formato)}"></div>
+  </div>`;
+  if(!editando){
+    h+=`<label for="f_cola" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600">Standings colados</label>
+    <textarea id="f_cola" rows="7" placeholder="1 Buzuka 7 2-0-1 51.9% 72.2% 54.1% Active&#10;2 OK3N4G 7 2-0-1 44.3% 72.2% 46.0% Active&#10;…"></textarea>
+    <div style="margin:12px 0"><button class="btn" data-ler>Ler standings</button></div>`;
+  }
   if(revisao){
     if(!revisao.length) h+=`<div class="aviso erro">Não consegui achar nenhuma linha no texto colado.
       Confira se copiou a tabela inteira, com colocação, placar e as três porcentagens.</div>`;
@@ -597,22 +649,26 @@ function secNovo(){
         <td><input class="n w-r" data-i="${i}" data-c="e" value="${r.e}"></td>
         <td class="n w-p" id="pts-${i}" style="color:var(--gold)">${3*r.v+r.e}</td></tr>`).join('');
       h+=`</tbody></table>
-      <div style="margin:16px 0 30px;display:flex;gap:10px">
-        <button class="btn" id="btnSalvar" data-salvar ${v.problemas.length?'disabled':''}>Salvar torneio</button>
-        <button class="btn ghost" data-cancelar>Cancelar</button></div>`;
+      <div style="margin:16px 0 30px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="btnSalvar" data-salvar ${v.problemas.length?'disabled':''}>${
+          editando?'Salvar alterações':'Salvar torneio'}</button>
+        <button class="btn ghost" data-cancelar>Cancelar</button>
+        ${editando?`<button class="btn ghost" style="color:var(--erro)" data-apagar="${editandoId}">Apagar torneio</button>`:''}</div>`;
     }
   }
   return h;
 }
 
 async function salvar(){
-  const btn=document.querySelector('[data-salvar]');
+  const btn=document.getElementById('btnSalvar');
   if(btn){btn.disabled=true;btn.textContent='Salvando…';}
+  const editando=editandoId!==null;
+  let torId=editandoId;
   try{
-    const dataISO=`${f_data.value}T${f_hora.value}:00`;
-    const lojaId=+f_loja.value;
-    const conhecidos=new Map(RAW.map(r=>[r.apelido,null]));
-    const novos=revisao.filter(r=>!conhecidos.has(r.apelido)).map(r=>r.apelido);
+    const dataISO=`${formTor.data}T${formTor.hora}:00`;
+    const lojaId=+formTor.loja_id;
+    const conhecidos=new Set(RAW.map(r=>r.apelido));
+    const novos=[...new Set(revisao.filter(r=>!conhecidos.has(r.apelido)).map(r=>r.apelido))];
     if(novos.length){
       const {error}=await sb.from('jogadores').insert(novos.map(a=>({apelido:a})));
       if(error) throw error;
@@ -622,22 +678,36 @@ async function salvar(){
     if(eJ) throw eJ;
     const idPorApelido=new Map(jogs.map(j=>[j.apelido,j.id]));
 
-    const {data:tor,error:eT}=await sb.from('torneios').insert({
-      data:dataISO, loja_id:lojaId, evento:f_evento.value.trim()||'Torneio',
-      formato:f_formato.value.trim()||'1v1'}).select('id').single();
-    if(eT) throw eT;
+    const campos={data:dataISO, loja_id:lojaId,
+      evento:formTor.evento.trim()||'Torneio', formato:formTor.formato.trim()||'1v1'};
+
+    if(editando){
+      const {error:eU}=await sb.from('torneios').update(campos).eq('id',torId);
+      if(eU) throw eU;
+      const {error:eD}=await sb.from('participacoes').delete().eq('torneio_id',torId);
+      if(eD) throw eD;
+    }else{
+      const {data:tor,error:eT}=await sb.from('torneios').insert(campos).select('id').single();
+      if(eT) throw eT;
+      torId=tor.id;
+    }
 
     const {error:eP}=await sb.from('participacoes').insert(revisao.map(r=>({
-      torneio_id:tor.id, jogador_id:idPorApelido.get(r.apelido), lenda_id:+r.lenda_id,
+      torneio_id:torId, jogador_id:idPorApelido.get(r.apelido), lenda_id:+r.lenda_id,
       colocacao:r.rank, vitorias:r.v, derrotas:r.d, empates:r.e,
       omw:r.omw, gw:r.gw, ogw:r.ogw})));
-    if(eP){ await sb.from('torneios').delete().eq('id',tor.id); throw eP; }
+    if(eP){
+      if(!editando) await sb.from('torneios').delete().eq('id',torId);
+      throw eP;
+    }
 
-    msg={t:'ok',m:`Torneio salvo com ${revisao.length} jogadores. O ranking já está atualizado.`};
-    revisao=null;
+    msg={t:'ok',m:editando?`Torneio atualizado com ${revisao.length} jogadores.`
+                          :`Torneio salvo com ${revisao.length} jogadores. O ranking já está atualizado.`};
+    limparForm();
     await carregar();
   }catch(e){
-    msg={t:'erro',m:'Não deu para salvar: '+(e.message||e)+' — nada foi gravado.'};
+    msg={t:'erro',m:'Não deu para salvar: '+(e.message||e)+
+      (editando?' — o torneio pode ter ficado sem participações; edite de novo.':' — nada foi gravado.')};
   }
   pinta();
 }
@@ -668,7 +738,7 @@ function abrirLogin(){
 
 let t0=Date.now(), tickId=setInterval(()=>{
   const el=document.getElementById('tick');
-  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v6)';
+  if(el&&carregando.style.display!=='none') el.textContent='('+Math.round((Date.now()-t0)/1000)+'s · v7)';
 },1000);
 function falhar(txt,detalhe){
   clearInterval(tickId);
@@ -710,8 +780,10 @@ document.addEventListener('click',async e=>{
   if(e.target.closest('[data-entrar]')){abrirLogin();return;}
   if(e.target.closest('[data-sair]')){await sb.auth.signOut();await verSessao();aba='jogadores';pinta();return;}
   if(e.target.closest('[data-ler]')){revisao=parseStandings(f_cola.value);msg=null;pinta();return;}
-  if(e.target.closest('[data-cancelar]')){revisao=null;msg=null;pinta();return;}
+  if(e.target.closest('[data-cancelar]')){limparForm();msg=null;pinta();return;}
   if(e.target.closest('[data-salvar]')){await salvar();return;}
+  const ed=e.target.closest('[data-editar]'); if(ed){editarTorneio(+ed.dataset.editar);return;}
+  const ap=e.target.closest('[data-apagar]'); if(ap){await apagarTorneio(+ap.dataset.apagar);return;}
 });
 function aoEditarLinha(e){
   const el=e.target.closest('[data-i]'); if(!el||!revisao) return;
@@ -722,10 +794,14 @@ function aoEditarLinha(e){
 }
 document.addEventListener('input',aoEditarLinha);
 document.addEventListener('change',aoEditarLinha);
-// os campos de data/hora/loja tambem entram na validacao de duplicata
-['f_data','f_hora','f_loja'].forEach(id=>{
-  document.addEventListener('change',e=>{ if(e.target.id===id) atualizarValidacao(); });
-});
+// cabecalho do formulario: guarda em formTor para nao se perder ao redesenhar
+function aoEditarCabecalho(e){
+  const el=e.target.closest('[data-f]'); if(!el) return;
+  formTor[el.dataset.f]=el.value;
+  atualizarValidacao();
+}
+document.addEventListener('input',aoEditarCabecalho);
+document.addEventListener('change',aoEditarCabecalho);
 document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('prow')){e.preventDefault();e.target.click();}
 });
